@@ -14,7 +14,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Initialize SQLite database
-const db = new Database('emails.db');
+const dbPath = process.env.VERCEL ? path.join('/tmp', 'emails.db') : path.join(__dirname, 'emails.db');
+const db = new Database(dbPath);
 
 // Create tables if they don't exist
 db.exec(`
@@ -260,7 +261,11 @@ app.delete('/api/emails/:id', authenticate, (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
 
