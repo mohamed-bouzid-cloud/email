@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .use-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .use-btn:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .use-btn.invalid {
+            background-color: #dc3545;
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+
+        .datetime-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 210px;
+        }
+
+        .datetime-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .add-row-form {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .add-row-form h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #495057;
+        }
+
+        .add-row-form input {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 280px;
+        }
+
+        .add-row-form input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .add-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .add-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background-color: #bd2130;
+        }
+
+        .edit-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        .edit-btn:hover {
+            background-color: #138496;
+        }
+
+        .logout-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .email-cell {
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .email-cell:hover {
+            background-color: #e2e6ea;
+            border-radius: 4px;
+        }
+
+        .email-input {
+            padding: 6px 10px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 220px;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Email Table</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        
+        <table id="emailTable">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Use</th>
+                    <th>Date & Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="emailTableBody">
+                <!-- Dynamically populated from database -->
+            </tbody>
+        </table>
+
+        <div class="add-row-form">
+            <h3>Add New Email</h3>
+            <input type="email" id="newEmail" placeholder="Enter email address" onkeypress="if(event.key==='Enter') addEmail()">
+            <button class="add-btn" onclick="addEmail()">Add</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmails();
+        });
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        function clearButtonInterval(button) {
+            if (button.dataset.intervalId) {
+                clearInterval(parseInt(button.dataset.intervalId, 10));
+                delete button.dataset.intervalId;
+            }
+        }
+
+        async function loadEmails() {
+            try {
+                const response = await fetch('/api/emails');
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                const emails = await response.json();
+                const tbody = document.getElementById('emailTableBody');
+                
+                // Clear any running intervals from previous render
+                const existingButtons = tbody.querySelectorAll('.use-btn');
+                existingButtons.forEach(btn => clearButtonInterval(btn));
+
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(emails) || emails.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No emails saved yet. Add one below.</td></tr>';
+                    return;
+                }
+                
+                emails.forEach(data => {
+                    renderRow(data);
+                });
+            } catch (error) {
+                console.error('Error loading emails:', error);
+            }
+        }
+
+        function renderRow(data) {
+            const tbody = document.getElementById('emailTableBody');
+            
+            // Remove empty placeholder row if present
+            const emptyRow = tbody.querySelector('.empty-row');
+            if (emptyRow) {
+                tbody.innerHTML = '';
+            }
+
+            const newRow = tbody.insertRow();
+            newRow.dataset.id = data.id;
+            
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            const cell3 = newRow.insertCell(2);
+            const cell4 = newRow.insertCell(3);
+            
+            cell1.textContent = data.email;
+            cell1.className = 'email-cell';
+            cell1.onclick = function() { startEditEmail(cell1); };
+            
+            const useBtn = document.createElement('button');
+            useBtn.className = 'use-btn';
+            useBtn.textContent = 'Use';
+            useBtn.onclick = function() { useEmail(useBtn); };
+            cell2.appendChild(useBtn);
+            
+            const dateInput = document.createElement('input');
+            dateInput.type = 'datetime-local';
+            dateInput.className = 'datetime-input';
+            if (data.datetime) {
+                dateInput.value = data.datetime;
+            }
+            dateInput.onchange = function() { checkManualDate(dateInput); };
+            cell3.appendChild(dateInput);
+            
+            cell4.innerHTML = `
+                <button class="edit-btn" onclick="startEditEmail(this.closest('tr').cells[0])">Edit</button>
+                <button class="delete-btn" onclick="deleteEmail(this)">Delete</button>
+            `;
+
+            // Restore invalid / countdown state
+            if (data.is_invalid && data.valid_date) {
+                const validTime = parseInt(data.valid_date, 10);
+                const currentTime = new Date().getTime();
+                
+                if (!isNaN(validTime) && currentTime < validTime) {
+                    setupButtonCountdown(useBtn, validTime, data.id, data.email, dateInput);
+                } else {
+                    // Date has passed, reset in database and UI
+                    resetButtonState(useBtn);
+                    updateEmailState(data.id, data.email, data.datetime, 0, 'Use', null);
+                }
+            }
+        }
+
+        function setupButtonCountdown(button, validTime, emailId, email, datetimeInput) {
+            clearButtonInterval(button);
+            
+            button.textContent = 'Not valid yet';
+            button.classList.add('invalid');
+            button.disabled = true;
+            button.dataset.validDate = validTime;
+
+            const checkInterval = setInterval(async () => {
+                const currentTime = new Date().getTime();
+                
+                if (currentTime >= validTime) {
+                    resetButtonState(button);
+                    await updateEmailState(emailId, email, datetimeInput.value, 0, 'Use', null);
+                }
+            }, 1000);
+
+            button.dataset.intervalId = checkInterval;
+        }
+
+        function resetButtonState(button) {
+            clearButtonInterval(button);
+            button.textContent = 'Use';
+            button.classList.remove('invalid');
+            button.disabled = false;
+            delete button.dataset.validDate;
+        }
+
+        async function updateEmailState(id, email, datetime, isInvalid, buttonText, validDate) {
+            try {
+                const response = await fetch(`/api/emails/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        datetime: datetime,
+                        is_invalid: isInvalid,
+                        button_text: buttonText,
+                        valid_date: validDate
+                    })
+                });
+                if (!response.ok) {
+                    console.error('Failed to update email state:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error updating email state:', error);
+            }
+        }
+
+        async function useEmail(button) {
+            const row = button.closest('tr');
+            const email = row.cells[0].textContent.trim();
+            const datetimeInput = row.cells[2].querySelector('input');
+            const emailId = row.dataset.id;
+
+            clearButtonInterval(button);
+            
+            // Calculate date 7 days from now
+            const now = new Date();
+            const futureDate = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+            
+            // Format for datetime-local input YYYY-MM-DDTHH:mm
+            const year = futureDate.getFullYear();
+            const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+            const day = String(futureDate.getDate()).padStart(2, '0');
+            const hours = String(futureDate.getHours()).padStart(2, '0');
+            const minutes = String(futureDate.getMinutes()).padStart(2, '0');
+            
+            const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+            datetimeInput.value = formattedDate;
+            
+            const validTime = futureDate.getTime();
+            
+            setupButtonCountdown(button, validTime, emailId, email, datetimeInput);
+
+            await updateEmailState(
+                emailId,
+                email,
+                formattedDate,
+                1,
+                'Not valid yet',
+                validTime
+            );
+        }
+
+        async function checkManualDate(input) {
+            const row = input.closest('tr');
+            const button = row.cells[1].querySelector('button');
+            const emailId = row.dataset.id;
+            const email = row.cells[0].textContent.trim();
+            
+            clearButtonInterval(button);
+
+            if (!input.value) {
+                resetButtonState(button);
+                await updateEmailState(emailId, email, '', 0, 'Use', null);
+                return;
+            }
+
+            const selectedDate = new Date(input.value);
+            const now = new Date();
+
+            if (!isNaN(selectedDate.getTime()) && selectedDate.getTime() > now.getTime()) {
+                const validTime = selectedDate.getTime();
+                setupButtonCountdown(button, validTime, emailId, email, input);
+                await updateEmailState(emailId, email, input.value, 1, 'Not valid yet', validTime);
+            } else {
+                resetButtonState(button);
+                await updateEmailState(emailId, email, input.value, 0, 'Use', null);
+            }
+        }
+
+        async function addEmail() {
+            const emailInput = document.getElementById('newEmail');
+            const email = emailInput.value.trim();
+            
+            if (email === '') {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            if (!email.includes('@') || !email.includes('.')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, datetime: '' })
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to add email');
+                    return;
+                }
+                
+                const data = await response.json();
+                renderRow(data);
+                emailInput.value = '';
+            } catch (error) {
+                console.error('Error adding email:', error);
+                alert('Error adding email');
+            }
+        }
+
+        async function deleteEmail(button) {
+            const row = button.closest('tr');
+            const emailCell = row.cells[0];
+            const email = (emailCell.querySelector('input') ? emailCell.querySelector('input').value : emailCell.textContent).trim();
+            const emailId = row.dataset.id;
+            
+            if (confirm(`Are you sure you want to delete ${email}?`)) {
+                try {
+                    const useButton = row.querySelector('.use-btn');
+                    if (useButton) clearButtonInterval(useButton);
+                    
+                    const response = await fetch(`/api/emails/${emailId}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        row.remove();
+                        const tbody = document.getElementById('emailTableBody');
+                        if (tbody.children.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No emails saved yet. Add one below.</td></tr>';
+                        }
+                    } else {
+                        alert('Failed to delete email');
+                    }
+                } catch (error) {
+                    console.error('Error deleting email:', error);
+                    alert('Error deleting email');
+                }
+            }
+        }
+
+        function startEditEmail(emailCell) {
+            if (emailCell.querySelector('input')) return; // Already editing
+            
+            const currentEmail = emailCell.textContent.trim();
+            emailCell.onclick = null;
+            
+            const input = document.createElement('input');
+            input.type = 'email';
+            input.value = currentEmail;
+            input.className = 'email-input';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.className = 'add-btn';
+            saveBtn.style.marginLeft = '5px';
+            saveBtn.style.padding = '4px 8px';
+            saveBtn.style.fontSize = '12px';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'delete-btn';
+            cancelBtn.style.marginLeft = '4px';
+            cancelBtn.style.padding = '4px 8px';
+            cancelBtn.style.fontSize = '12px';
+            
+            const finishEdit = (newVal) => {
+                emailCell.innerHTML = '';
+                emailCell.textContent = newVal;
+                emailCell.onclick = function() { startEditEmail(emailCell); };
+            };
+
+            saveBtn.onclick = async function(e) {
+                e.stopPropagation();
+                const newEmail = input.value.trim();
+                
+                if (newEmail === '') {
+                    alert('Email cannot be empty');
+                    return;
+                }
+                
+                if (!newEmail.includes('@') || !newEmail.includes('.')) {
+                    alert('Please enter a valid email address');
+                    return;
+                }
+                
+                const row = emailCell.closest('tr');
+                const emailId = row.dataset.id;
+                const datetime = row.cells[2].querySelector('input').value;
+                const button = row.querySelector('.use-btn');
+                
+                finishEdit(newEmail);
+                
+                await updateEmailState(
+                    emailId,
+                    newEmail,
+                    datetime,
+                    button.classList.contains('invalid') ? 1 : 0,
+                    button.textContent,
+                    button.dataset.validDate || null
+                );
+            };
+            
+            cancelBtn.onclick = function(e) {
+                e.stopPropagation();
+                finishEdit(currentEmail);
+            };
+
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') saveBtn.click();
+            };
+
+            input.onkeydown = function(e) {
+                if (e.key === 'Escape') cancelBtn.click();
+            };
+            
+            emailCell.innerHTML = '';
+            emailCell.appendChild(input);
+            emailCell.appendChild(saveBtn);
+            emailCell.appendChild(cancelBtn);
+            
+            input.focus();
+            input.select();
+        }
+    </script>
+</body>
+</html>
+
